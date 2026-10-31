@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useParams } from 'react-router'
 import { petsApi, tagsApi } from '../../api/endpoints.js'
 import { EmptyTagsArt } from '../../components/illustrations/Scenes.jsx'
@@ -30,6 +30,13 @@ export default function TagsPage() {
   const [toRemove, setToRemove] = useState(null)
   const [removing, setRemoving] = useState(false)
   const [nfcWriting, setNfcWriting] = useState(null)
+
+  useEffect(() => {
+    if (!('NDEFReader' in window)) return undefined
+    const controller = new AbortController()
+    new window.NDEFReader().scan({ signal: controller.signal }).then(() => controller.abort()).catch(() => {})
+    return () => controller.abort()
+  }, [])
 
   const writeNfc = async (code) => {
     if (!('NDEFReader' in window)) {
