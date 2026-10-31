@@ -103,7 +103,7 @@ function HelloStep({ pet, lost, onNext }) {
   return (
     <section className="flex flex-col items-center text-center">
       <div className="relative">
-        <span aria-hidden="true" className="absolute -inset-4 animate-ping-soft rounded-[40%] bg-pet/40 [animation-duration:2.6s]" />
+        <span aria-hidden="true" className="absolute -inset-5 rounded-[42%] bg-pet/35 blur-2xl" />
         <span className="relative block animate-wiggle">
           <PetAvatar pet={pet} size={184} rounded="rounded-[38%]" className="shadow-lift ring-8 ring-surface" />
         </span>
@@ -292,15 +292,17 @@ function ContactStep({ pet, lost, code, scanId, preview, condition, located, hea
   }
 
   const phoneCard = lost?.phone && (
-    <div className="card mt-4 flex items-center gap-4">
-      <span className="grid size-12 shrink-0 place-items-center rounded-2xl bg-alert text-white">
-        <Icon name="phone" />
-      </span>
-      <div className="min-w-0 flex-1">
-        <p className="font-bold">Pilne? Zadzwoń{owner ? ` do: ${owner}` : ''}</p>
-        <p className="text-sm text-muted">Opiekun udostępnił numer na czas poszukiwań.</p>
+    <div className="card mt-4 text-left">
+      <div className="flex items-center gap-4">
+        <span className="grid size-12 shrink-0 place-items-center rounded-2xl bg-alert text-white">
+          <Icon name="phone" />
+        </span>
+        <div className="min-w-0 flex-1">
+          <p className="font-bold">Pilne? Zadzwoń{owner ? ` do: ${owner}` : ''}</p>
+          <p className="text-sm text-muted">Opiekun udostępnił numer na czas poszukiwań.</p>
+        </div>
       </div>
-      <Button href={telHref(lost.phone)} variant="danger" size="sm" icon="phone">
+      <Button href={telHref(lost.phone)} variant="danger" full className="mt-4" icon="phone">
         {lost.phone}
       </Button>
     </div>
