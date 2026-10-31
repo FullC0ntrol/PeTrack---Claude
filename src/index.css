@@ -1,0 +1,353 @@
+@import 'tailwindcss';
+@import '@fontsource-variable/sora';
+@import '@fontsource-variable/inter';
+@import 'leaflet/dist/leaflet.css';
+
+/* Ciemny motyw sterowany klasą .dark na <html> (theme-init.js + useTheme). */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/*
+  Tokeny. Kolory semantyczne wskazują na zmienne --c-*, które przełączamy w .dark – dzięki temu
+  w komponentach piszemy po prostu `bg-surface text-ink` i działa w obu motywach.
+  Paleta Tailwinda jest wyzerowana, żeby w kodzie dało się użyć tylko kolorów projektu.
+  Kontrasty sprawdzone pod WCAG AA (≥ 4,5:1 dla tekstu).
+  `inline`: klasy dostają bezpośrednio var(--pet) itd., więc .pet-<kolor> na dowolnym
+  kontenerze przebarwia jego wnętrze (zwykły @theme rozwiązałby zmienną raz, na :root).
+*/
+@theme inline {
+  --color-*: initial;
+  --color-white: #ffffff;
+  --color-black: #000000;
+  --color-bg: var(--c-bg);
+  --color-surface: var(--c-surface);
+  --color-raised: var(--c-raised);
+  --color-ink: var(--c-ink);
+  --color-muted: var(--c-muted);
+  --color-line: var(--c-line);
+  --color-accent: #ff5a3d;
+  --color-on-accent: #1a0d09;
+  --color-accent-text: var(--c-accent-text);
+  --color-accent-soft: var(--c-accent-soft);
+  --color-alert: #e11d48;
+  --color-alert-text: var(--c-alert-text);
+  --color-alert-soft: var(--c-alert-soft);
+  --color-ok-text: var(--c-ok-text);
+  --color-ok-soft: var(--c-ok-soft);
+  --color-pet: var(--pet);
+  --color-on-pet: var(--pet-on);
+  --color-pet-text: var(--pet-text);
+  --color-pet-soft: var(--pet-soft);
+}
+
+@theme {
+  --font-display: 'Sora Variable', ui-sans-serif, system-ui, sans-serif;
+  --font-sans: 'Inter Variable', ui-sans-serif, system-ui, sans-serif;
+  --font-mono: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+
+  --radius-4xl: 2rem;
+  --radius-5xl: 2.75rem;
+
+  --shadow-*: initial;
+  --shadow-soft: 0 1px 2px rgb(24 23 28 / 0.04), 0 10px 30px -12px rgb(24 23 28 / 0.14);
+  --shadow-lift: 0 2px 8px rgb(24 23 28 / 0.06), 0 24px 56px -16px rgb(24 23 28 / 0.28);
+  --shadow-glow: 0 10px 30px -8px rgb(255 90 61 / 0.55);
+
+  --ease-spring: cubic-bezier(0.3, 1.5, 0.5, 1);
+  --ease-out-soft: cubic-bezier(0.2, 0.8, 0.2, 1);
+
+  --animate-rise: rise 0.45s var(--ease-out-soft) both;
+  --animate-rise-back: rise-back 0.45s var(--ease-out-soft) both;
+  --animate-fade: fade 0.25s ease both;
+  --animate-sheet: sheet-up 0.38s cubic-bezier(0.2, 0.9, 0.25, 1) both;
+  --animate-pop: pop 0.55s var(--ease-spring) both;
+  --animate-shake: shake 0.4s ease both;
+  --animate-float: float 4s ease-in-out infinite;
+  --animate-wiggle: wiggle 1.2s ease-in-out 0.4s both;
+  --animate-ping-soft: ping-soft 1.8s ease-out infinite;
+  --animate-draw: draw 0.5s ease 0.25s both;
+
+  @keyframes rise {
+    from { opacity: 0; transform: translateY(14px); }
+    to { opacity: 1; transform: none; }
+  }
+  @keyframes rise-back {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: none; }
+  }
+  @keyframes fade {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+  @keyframes sheet-up {
+    from { transform: translateY(100%); }
+    to { transform: none; }
+  }
+  @keyframes pop {
+    0% { opacity: 0; transform: scale(0.6); }
+    100% { opacity: 1; transform: scale(1); }
+  }
+  @keyframes shake {
+    20%, 60% { transform: translateX(-6px); }
+    40%, 80% { transform: translateX(6px); }
+  }
+  @keyframes float {
+    50% { transform: translateY(-6px); }
+  }
+  @keyframes wiggle {
+    0%, 100% { transform: rotate(0); }
+    20% { transform: rotate(-6deg); }
+    40% { transform: rotate(5deg); }
+    60% { transform: rotate(-3deg); }
+    80% { transform: rotate(2deg); }
+  }
+  @keyframes ping-soft {
+    0% { transform: scale(1); opacity: 0.6; }
+    80%, 100% { transform: scale(2.2); opacity: 0; }
+  }
+  @keyframes draw {
+    from { stroke-dashoffset: 48; }
+    to { stroke-dashoffset: 0; }
+  }
+}
+
+:root {
+  --c-bg: #f5f5f3;
+  --c-surface: #ffffff;
+  --c-raised: #f0efee;
+  --c-ink: #18171c;
+  --c-muted: #67646a;
+  --c-line: #e4e2e0;
+  --c-accent-text: #b8361f;
+  --c-accent-soft: #fff1ee;
+  --c-alert-text: #be123c;
+  --c-alert-soft: #ffe4e9;
+  --c-ok-text: #0e7246;
+  --c-ok-soft: #dff6ea;
+  color-scheme: light;
+}
+
+.dark {
+  --c-bg: #121214;
+  --c-surface: #1c1c20;
+  --c-raised: #26262b;
+  --c-ink: #f4f3f6;
+  --c-muted: #a8a6ae;
+  --c-line: #2f2f35;
+  --c-accent-text: #ff8a73;
+  --c-accent-soft: #3a1d17;
+  --c-alert-text: #ff6b8a;
+  --c-alert-soft: #3b1520;
+  --c-ok-text: #5be3a8;
+  --c-ok-soft: #14301f;
+  color-scheme: dark;
+}
+
+/*
+  Kolory zwierząt. Klasa .pet-<kolor> na kontenerze barwi wszystko w środku:
+    --pet      pełny kolor tła (karta-bohater, przyciski), tekst na nim: --pet-on,
+    --pet-text kolor tekstu/ikon na neutralnym tle (ciemniejszy w jasnym motywie, jaśniejszy w ciemnym),
+    --pet-soft delikatne tło.
+  Domyślnie (poza ekranami zwierzęcia) – koral aplikacji.
+*/
+:root,
+.pet-coral {
+  --pet: #ff6b57;
+  --pet-text: #b4321f;
+  --pet-soft: #ffe8e4;
+}
+.pet-mandarin {
+  --pet: #ff9f1c;
+  --pet-text: #9a5200;
+  --pet-soft: #fff0db;
+}
+.pet-sun {
+  --pet: #ffd23f;
+  --pet-text: #7a5f00;
+  --pet-soft: #fff7d6;
+}
+.pet-mint {
+  --pet: #3ddc97;
+  --pet-text: #0e7246;
+  --pet-soft: #ddf8ec;
+}
+.pet-teal {
+  --pet: #2ec4b6;
+  --pet-text: #0b6f67;
+  --pet-soft: #d9f5f2;
+}
+.pet-sky {
+  --pet: #4d9de0;
+  --pet-text: #1d5da8;
+  --pet-soft: #e1eefa;
+}
+.pet-lavender {
+  --pet: #a78bfa;
+  --pet-text: #6435d0;
+  --pet-soft: #eee8fe;
+}
+.pet-pink {
+  --pet: #f472b6;
+  --pet-text: #b01f68;
+  --pet-soft: #fde6f1;
+}
+:root {
+  --pet-on: #18171c;
+}
+
+.dark,
+.dark .pet-coral {
+  --pet-text: #ff9c8c;
+  --pet-soft: #3a1e1a;
+}
+.dark .pet-mandarin {
+  --pet-text: #ffb45c;
+  --pet-soft: #3a2810;
+}
+.dark .pet-sun {
+  --pet-text: #ffd95e;
+  --pet-soft: #352e10;
+}
+.dark .pet-mint {
+  --pet-text: #5be3a8;
+  --pet-soft: #12301f;
+}
+.dark .pet-teal {
+  --pet-text: #4fd6c9;
+  --pet-soft: #0f2e2b;
+}
+.dark .pet-sky {
+  --pet-text: #7db8ea;
+  --pet-soft: #142538;
+}
+.dark .pet-lavender {
+  --pet-text: #bba6fc;
+  --pet-soft: #251d3d;
+}
+.dark .pet-pink {
+  --pet-text: #f79bcb;
+  --pet-soft: #3a1a2b;
+}
+
+@layer base {
+  html {
+    -webkit-tap-highlight-color: transparent;
+    text-size-adjust: 100%;
+  }
+  body {
+    @apply bg-bg font-sans text-ink antialiased;
+    min-height: 100dvh;
+  }
+  h1,
+  h2,
+  h3 {
+    @apply font-display tracking-tight;
+    text-wrap: balance;
+  }
+  :focus-visible {
+    outline: 3px solid var(--color-accent);
+    outline-offset: 2px;
+  }
+  ::selection {
+    background: var(--pet);
+    color: var(--pet-on);
+  }
+  input,
+  textarea,
+  select {
+    font-size: 16px; /* iOS nie powiększa wtedy strony przy fokusie */
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    ::before,
+    ::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}
+
+@layer components {
+  /* Pola formularzy: duże, zaokrąglone, z wyraźnym fokusem. */
+  .field {
+    @apply w-full rounded-2xl border-2 border-transparent bg-raised px-4 py-3 text-ink transition-colors outline-none placeholder:text-muted;
+  }
+  .field:focus {
+    @apply border-pet bg-surface;
+  }
+  .field[aria-invalid='true'] {
+    @apply border-alert;
+  }
+
+  .card {
+    @apply rounded-4xl bg-surface p-5 shadow-soft;
+  }
+
+  .no-scrollbar {
+    scrollbar-width: none;
+  }
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+/* Leaflet: zaokrąglone kontrolki i przyciemnione kafelki w ciemnym motywie. */
+.leaflet-container {
+  font-family: var(--font-sans);
+  background: var(--c-raised);
+}
+.leaflet-control-zoom a {
+  border-radius: 12px !important;
+}
+.dark .leaflet-tile-pane {
+  filter: invert(1) hue-rotate(180deg) brightness(0.92) contrast(0.88) saturate(0.6);
+}
+.dark .leaflet-control-attribution {
+  background: rgb(28 28 32 / 0.8) !important;
+  color: #a8a6ae;
+}
+.dark .leaflet-control-attribution a {
+  color: #ff8a73;
+}
+.map-pin {
+  background: none;
+  border: 0;
+}
+
+/* Konfetti na ekranie „Znaleziony!” – same CSS, bez bibliotek. */
+.confetti {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+.confetti i {
+  position: absolute;
+  top: -12px;
+  width: 9px;
+  height: 14px;
+  border-radius: 3px;
+  animation: confetti-fall var(--d, 2.6s) cubic-bezier(0.25, 0.6, 0.4, 1) var(--delay, 0s) both;
+}
+@keyframes confetti-fall {
+  0% { transform: translate3d(0, 0, 0) rotate(0); opacity: 1; }
+  100% { transform: translate3d(var(--x, 0), 105vh, 0) rotate(var(--r, 540deg)); opacity: 0.9; }
+}
+
+/* Plakat: A4 bez marginesów przeglądarki, z kolorami w druku. */
+@media print {
+  @page {
+    size: A4;
+    margin: 0;
+  }
+  html,
+  body {
+    background: #fff !important;
+  }
+  * {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+}

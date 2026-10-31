@@ -11,7 +11,7 @@ async function waitForDatabase(attempts = 20) {
       await pool.query('SELECT 1')
       return
     } catch (error) {
-      if (i === attempts) throw new Error(`Brak połączenia z bazą (${config.databaseUrl.replace(/:[^:@/]+@/, ':***@')}): ${error.message}`)
+      if (i === attempts) throw new Error(`Brak połączenia z bazą (${config.databaseUrl.replace(/:[^:@/]+@/, ':***@')}): ${error.message}`, { cause: error })
       await new Promise((resolve) => setTimeout(resolve, 1000))
     }
   }

@@ -86,7 +86,7 @@ eventsRouter.get('/:petId/events', async (req, res) => {
   }
 
   res.json({
-    pet: { id: pet.id, name: pet.name, color: pet.color, species: pet.species },
+    pet: { id: pet.id, name: pet.name, color: pet.color, species: pet.species, sex: pet.sex },
     items,
     unread: items.filter((item) => item.unread).length,
     report: toLostReport(report),

@@ -18,8 +18,13 @@ function fail(field, message) {
 
 // Usuwa znaki sterujące (poza nową linią w polach wieloliniowych) i białe znaki z brzegów.
 function clean(value, multiline) {
-  const pattern = multiline ? /[\u0000-\u0009\u000B-\u001F\u007F]/g : /[\u0000-\u001F\u007F]/g
-  return value.replace(pattern, '').trim()
+  let result = ''
+  for (const char of value) {
+    const code = char.charCodeAt(0)
+    const isControl = code < 32 || code === 127
+    if (!isControl || (multiline && code === 10)) result += char
+  }
+  return result.trim()
 }
 
 export function text(value, field, { max = 200, min = 0, multiline = false, label = 'Pole' } = {}) {

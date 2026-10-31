@@ -12,7 +12,7 @@ function bool(name, fallback) {
   return env[name] === 'true'
 }
 
-const appUrl = (env.APP_URL || 'http://localhost:5173').replace(/\/$/, '')
+const appUrl = (env.APP_URL || 'http://localhost:5180').replace(/\/$/, '')
 const isLocal = /^https?:\/\/(localhost|127\.0\.0\.1)(:|\/|$)/.test(appUrl)
 
 const authSecret = env.AUTH_SECRET || (isProduction ? '' : 'dev-only-secret-dev-only-secret')

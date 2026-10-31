@@ -100,7 +100,7 @@ export async function seedDemo({ reset = false, log = console.log } = {}) {
       contact_name: 'Ola Nowak',
       contact_phone: '+48 600 700 800',
     }, ago(195 * D))
-    const fistaszek = await insertPet(client, ownerId, {
+    await insertPet(client, ownerId, {
       name: 'Fistaszek',
       species: 'other',
       breed: 'Świnka morska rozetka',
