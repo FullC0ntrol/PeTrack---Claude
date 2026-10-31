@@ -36,6 +36,7 @@ export const petsApi = {
 
 export const tagsApi = {
   claim: (code, petId) => post('/tags/claim', { code, petId }),
+  create: () => post('/tags/new'),
   unassign: (code) => del(`/tags/${code}`),
 }
 

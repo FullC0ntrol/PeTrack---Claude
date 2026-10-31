@@ -3,6 +3,7 @@ import { query } from '../db/pool.js'
 import { HttpError } from '../errors.js'
 import { requireAuth } from '../middleware/auth.js'
 import { rateLimit } from '../middleware/rateLimit.js'
+import { generateTagCode } from '../services/crypto.js'
 import { getOwnedPet } from '../services/pets.js'
 import * as v from '../validation.js'
 
@@ -44,6 +45,28 @@ tagsRouter.post('/claim', claimLimit, async (req, res) => {
     throw new HttpError(409, 'Ten tag jest przypisany do innego Twojego zwierzęcia. Najpierw go odepnij.', { field: 'code' })
   }
   throw new HttpError(409, 'Ten tag jest już zajęty.', { field: 'code' })
+})
+
+const newTagLimit = rateLimit({
+  name: 'tag-new',
+  windowMs: 60 * 60 * 1000,
+  max: 20,
+  keyFn: (req) => req.user?.id,
+  message: 'Za dużo nowych tagów naraz. Odczekaj chwilę.',
+})
+
+/*
+  POST /api/tags/new – nowy wolny kod dla pustego tagu NFC (albo tagu z kodem spoza tej bazy).
+  Aplikacja zapisuje go na tagu i dopiero wtedy przypisuje przez /claim – nieudany zapis zostawia
+  tylko wolny, nikomu nieznany kod.
+*/
+tagsRouter.post('/new', newTagLimit, async (req, res) => {
+  for (;;) {
+    const code = generateTagCode()
+    // ON CONFLICT: przy (bardzo mało prawdopodobnym) powtórzeniu kodu po prostu losujemy kolejny.
+    const { rowCount } = await query(`INSERT INTO tags (code, batch) VALUES ($1, 'nfc') ON CONFLICT DO NOTHING`, [code])
+    if (rowCount) return res.status(201).json({ code })
+  }
 })
 
 // DELETE /api/tags/:code – odpięcie (np. zgubiona zawieszka). Tag wraca do puli wolnych.

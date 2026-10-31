@@ -11,7 +11,8 @@ import { petClass } from '../../lib/petColors.js'
   „Przyłóż tag” – arkusz otwierany przyciskiem „Przypisz”. Od razu włącza czytnik Web NFC
   (klik dał przeglądarce zgodę na pytanie o uprawnienie) i czeka na tag:
     • tag z adresem …/t/KOD albo samym kodem → od razu przypisujemy go do zwierzęcia,
-    • tag pusty lub z obcym adresem → prosimy o kod z zawieszki, zapisujemy go na tagu i przypisujemy.
+    • tag pusty, z obcym adresem albo z kodem spoza bazy → serwer nadaje nowy kod (albo bierzemy
+      wydrukowany na zawieszce), zapisujemy go na tagu i przypisujemy.
   Gdy NFC nie działa (iPhone, inna przeglądarka, brak zgody, wyłączone NFC) – mówimy dlaczego,
   a pod spodem zawsze jest ręczne wpisanie kodu.
 */
@@ -80,8 +81,9 @@ function NfcClaim({ onClose, pet, onClaimed }) {
     controllerRef.current = null
   }
 
+  // fromTag: kod odczytany z tagu – jeśli serwer go nie zna, proponujemy nadpisanie tagu nowym kodem.
   const claim = useCallback(
-    async (tagCode) => {
+    async (tagCode, { fromTag = false } = {}) => {
       busyRef.current = true
       setPhase('claiming')
       setMessage(null)
@@ -92,8 +94,13 @@ function NfcClaim({ onClose, pet, onClaimed }) {
         setPhase('done')
         onClaimedRef.current?.(result.tag.code)
       } catch (err) {
-        setMessage(err.message)
-        setPhase('waiting')
+        if (fromTag && err.status === 404) {
+          setForeign(`Na tym tagu jest kod ${tagCode}, którego nie ma w PeTrace.`)
+          setPhase('blank')
+        } else {
+          setMessage(err.message)
+          setPhase('waiting')
+        }
       } finally {
         busyRef.current = false
       }
@@ -111,8 +118,8 @@ function NfcClaim({ onClose, pet, onClaimed }) {
     reader.onreading = (event) => {
       if (busyRef.current) return
       const found = codeFromRecords(event.message.records)
-      if (found.code) return claim(found.code)
-      setForeign(found.foreign ?? null)
+      if (found.code) return claim(found.code, { fromTag: true })
+      setForeign(found.foreign ? 'Na tym tagu jest zapis spoza PeTrace – nadpiszemy go.' : null)
       setPhase('blank')
     }
     reader.onreadingerror = () => {
@@ -137,25 +144,20 @@ function NfcClaim({ onClose, pet, onClaimed }) {
     listen()
   }
 
-  // Pusty tag: zapisujemy na nim adres z kodem z zawieszki, potem przypisujemy.
-  const writeAndClaim = async (event) => {
-    event.preventDefault()
-    if (!isFullCode(code)) return setCodeError('Kod ma 8 znaków, np. PETS-2345.')
+  // Zapis adresu z kodem na tagu, potem przypisanie. newCode = nowy kod od serwera zamiast wpisanego.
+  const writeAndClaim = async ({ newCode = false } = {}) => {
+    if (!newCode && !isFullCode(code)) return setCodeError('Kod ma 8 znaków, np. PETS-2345.')
     stopScan()
     busyRef.current = true
     setPhase('writing')
     setCodeError(null)
     try {
-      await new window.NDEFReader().write(
-        {
-          records: [{ recordType: 'url', data: `${window.location.origin}/t/${code}` }],
-        },
-        { overwrite: true },
-      )
+      const tagCode = newCode ? (await tagsApi.create()).code : code
+      await new window.NDEFReader().write({ records: [{ recordType: 'url', data: `${window.location.origin}/t/${tagCode}` }] }, { overwrite: true })
       busyRef.current = false
       // Wznawiamy czytnik, żeby po ewentualnym błędzie przypisania dało się od razu przyłożyć inny tag.
       listen()
-      await claim(code)
+      await claim(tagCode)
     } catch (err) {
       busyRef.current = false
       setCodeError(err.name === 'NotAllowedError' || err.name === 'NotReadableError' ? nfcProblem(err) : err.message || 'Błąd zapisu tagu.')
@@ -209,26 +211,41 @@ function NfcClaim({ onClose, pet, onClaimed }) {
           </Button>
         </div>
       ) : phase === 'blank' || phase === 'writing' ? (
-        <form onSubmit={writeAndClaim} noValidate>
+        <div>
           <p className="text-muted">
-            {foreign ? 'Na tym tagu jest inny zapis. Nadpiszemy go adresem PeTrace.' : 'Ten tag jest jeszcze pusty.'} Wpisz kod z odwrotu zawieszki – zapiszemy
-            go na tagu i od razu przypiszemy.
+            {foreign ?? 'Ten tag jest jeszcze pusty.'} Nadamy mu nowy kod, zapiszemy go na tagu i od razu przypiszemy do: {pet.name}.
           </p>
-          <div className="mt-4">{codeInput}</div>
           {phase === 'writing' && (
             <p className="mt-3 flex items-center gap-2 font-semibold text-pet-text">
               <Icon name="nfc" /> Przyłóż tag jeszcze raz i przytrzymaj…
             </p>
           )}
+          {codeError && <p className="mt-3 animate-fade font-medium text-alert-text">{codeError}</p>}
           <div className="mt-5 grid gap-2">
-            <Button type="submit" variant="pet" size="lg" icon="nfc" loading={phase === 'writing'}>
-              Zapisz na tagu i przypisz
+            <Button variant="pet" size="lg" icon="nfc" loading={phase === 'writing'} onClick={() => writeAndClaim({ newCode: true })}>
+              Nadaj nowy kod i zapisz na tagu
             </Button>
             <Button variant="ghost" size="lg" onClick={startScan} disabled={phase === 'writing'}>
               Przyłóż inny tag
             </Button>
           </div>
-        </form>
+          <details className="mt-4 rounded-3xl bg-raised p-4">
+            <summary className="cursor-pointer font-semibold">Na zawieszce jest wydrukowany kod?</summary>
+            <form
+              onSubmit={(event) => {
+                event.preventDefault()
+                writeAndClaim()
+              }}
+              className="mt-3 grid gap-3"
+              noValidate
+            >
+              {codeInput}
+              <Button type="submit" variant="secondary" size="lg" disabled={phase === 'writing' || !isFullCode(code)}>
+                Zapisz ten kod na tagu
+              </Button>
+            </form>
+          </details>
+        </div>
       ) : (
         <>
           {problem ? (
