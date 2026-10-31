@@ -79,11 +79,21 @@ async function main() {
   const items = codes.map((code) => ({ code, url: `${url}/t/${code}` }))
 
   const outDir = path.resolve('print')
-  await mkdir(outDir, { recursive: true })
   const htmlPath = path.join(outDir, `tagi-${batch}.html`)
   const csvPath = path.join(outDir, `tagi-${batch}.csv`)
-  await writeFile(htmlPath, await sheetHtml(batch, items))
-  await writeFile(csvPath, `kod;adres_nfc\n${items.map((i) => `${i.code};${i.url}`).join('\n')}\n`)
+  try {
+    await mkdir(outDir, { recursive: true })
+    await writeFile(htmlPath, await sheetHtml(batch, items))
+    await writeFile(csvPath, `kod;adres_nfc\n${items.map((i) => `${i.code};${i.url}`).join('\n')}\n`)
+  } catch (error) {
+    if (error.code !== 'EACCES') throw error
+    // Typowe na serwerze: katalog ./print sklonowany przez root, a kontener działa jako „node” (uid 1000).
+    throw new Error(
+      `Brak uprawnień do zapisu w ${outDir}. Tagi (${codes.join(', ')}) są już w bazie.\n` +
+        'Na serwerze, w katalogu projektu: sudo chown -R 1000:1000 print – i uruchom skrypt ponownie.',
+      { cause: error },
+    )
+  }
 
   console.log(`Utworzono ${codes.length} wolnych tagów (partia ${batch}).`)
   console.log(`  arkusz do druku: ${path.relative(process.cwd(), htmlPath)}`)
