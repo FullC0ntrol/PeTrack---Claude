@@ -1,0 +1,55 @@
+# PeTrace Alt: aplikacja (Express + zbudowany frontend) i PostgreSQL.
+#
+#   docker compose up --build      → http://localhost:8090
+#   docker compose up -d db        → sama baza do pracy lokalnej (npm run dev), port 5442
+#
+# Wartości ${NAZWA:-domyślna} można nadpisać w pliku .env (wzór: .env.example).
+name: petrace-alt
+
+services:
+  db:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: petrace
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-petrace}
+      POSTGRES_DB: petrace
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    ports:
+      # Tylko localhost – do pracy z `npm run dev`. Z sieci baza jest niedostępna.
+      - "127.0.0.1:${DB_PORT:-5442}:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U petrace -d petrace"]
+      interval: 3s
+      retries: 20
+
+  app:
+    build: .
+    restart: unless-stopped
+    environment:
+      PORT: 3000
+      DATABASE_URL: postgres://petrace:${POSTGRES_PASSWORD:-petrace}@db:5432/petrace
+      APP_URL: ${DOCKER_APP_URL:-http://localhost:8090}
+      AUTH_SECRET: ${AUTH_SECRET:-lokalny-docker-sekret-zmien-mnie-przed-wdrozeniem}
+      SEED_DEMO: ${SEED_DEMO:-true}
+      DEMO_LOGIN: ${DEMO_LOGIN:-true}
+      COOKIE_SECURE: ${COOKIE_SECURE:-false}
+      TRUST_PROXY: ${TRUST_PROXY:-0}
+      REVERSE_GEOCODING: ${REVERSE_GEOCODING:-true}
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASS: ${SMTP_PASS:-}
+      MAIL_FROM: ${MAIL_FROM:-PeTrace <no-reply@petrace.app>}
+    ports:
+      - "${HTTP_PORT:-8090}:3000"
+    volumes:
+      # Arkusze tagów z `npm run tags:generate` trafiają do ./print na komputerze.
+      - ./print:/app/print
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  db-data:
