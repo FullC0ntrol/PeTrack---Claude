@@ -29,6 +29,24 @@ export default function TagsPage() {
   const [justAdded, setJustAdded] = useState(null)
   const [toRemove, setToRemove] = useState(null)
   const [removing, setRemoving] = useState(false)
+  const [nfcWriting, setNfcWriting] = useState(null)
+
+  const writeNfc = async (code) => {
+    if (!('NDEFReader' in window)) {
+      toast.show('Web NFC działa tylko w Chrome na Androidzie', { tone: 'error' })
+      return
+    }
+    setNfcWriting(code)
+    try {
+      const ndef = new window.NDEFReader()
+      await ndef.write({ records: [{ recordType: 'url', data: `${window.location.origin}/t/${code}` }] })
+      toast.show(`Tag ${code} zakodowany ✓`)
+    } catch (err) {
+      if (err.name !== 'AbortError') toast.show(err.message || 'Błąd zapisu NFC', { tone: 'error' })
+    } finally {
+      setNfcWriting(null)
+    }
+  }
 
   if (error) return <ErrorState error={error} onRetry={reload} />
   if (loading || !data) return <PageSpinner />
@@ -92,6 +110,9 @@ export default function TagsPage() {
               <div className="mt-4 flex flex-wrap gap-2">
                 <Button to={`/t/${tag.code}?podglad=1`} variant="dark" size="sm" icon="eye">
                   Oczami znalazcy
+                </Button>
+                <Button variant="ghost" size="sm" icon="nfc" className="bg-white/40 hover:bg-white/60" loading={nfcWriting === tag.code} onClick={() => writeNfc(tag.code)}>
+                  {nfcWriting === tag.code ? 'Przyłóż tag…' : 'Zapisz NFC'}
                 </Button>
                 <Button variant="ghost" size="sm" icon="ban" className="bg-white/40 hover:bg-white/60" onClick={() => setToRemove(tag.code)}>
                   Odepnij
