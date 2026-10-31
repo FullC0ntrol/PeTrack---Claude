@@ -84,7 +84,7 @@ authRouter.post('/start', startByIp, startByEmail, async (req, res) => {
 
   const params = new URLSearchParams({ token })
   await sendLoginEmail(email, `${config.appUrl}/auth/link?${params}`, code)
-  res.json({ email, expiresInMinutes: TTL_MINUTES })
+  res.json({ email, expiresInMinutes: TTL_MINUTES, ...(config.devShowCode ? { devCode: code } : {}) })
 })
 
 // POST /api/auth/verify-link { token } – kliknięcie w link z maila.

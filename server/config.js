@@ -20,6 +20,9 @@ if (!authSecret) throw new Error('Brak AUTH_SECRET. Ustaw długi losowy sekret: 
 if (isProduction && !isLocal && (authSecret.length < 32 || authSecret.includes('zmien'))) {
   throw new Error('AUTH_SECRET jest domyślny albo za krótki – ustaw w .env losowy sekret (openssl rand -hex 32).')
 }
+if (isProduction && !isLocal && bool('DEV_SHOW_CODE', false)) {
+  throw new Error('DEV_SHOW_CODE=true na publicznym serwerze pozwala zalogować się na dowolne konto – ustaw false.')
+}
 
 export const config = {
   isProduction,
@@ -30,6 +33,7 @@ export const config = {
   authSecret,
   seedDemo: bool('SEED_DEMO', !isProduction),
   demoLogin: bool('DEMO_LOGIN', isLocal),
+  devShowCode: bool('DEV_SHOW_CODE', false),
   demoEmail: 'demo@petrace.app',
   cookieSecure: bool('COOKIE_SECURE', isProduction && !isLocal),
   trustProxy: Number(env.TRUST_PROXY || 0),

@@ -36,6 +36,7 @@ export default function LoginPage() {
   const [busy, setBusy] = useState(false)
   const [shake, setShake] = useState(0)
   const [now, setNow] = useState(() => Date.now())
+  const [devCode, setDevCode] = useState(null)
 
   useEffect(() => {
     if (!pending) return undefined
@@ -56,6 +57,7 @@ export default function LoginPage() {
       const value = { email: result.email, sentAt: Date.now() }
       session.set(PENDING_KEY, value)
       setPending(value)
+      setDevCode(result.devCode ?? null)
       setCode('')
     } catch (err) {
       setError(err.message)
@@ -110,6 +112,12 @@ export default function LoginPage() {
     <PublicShell>
       <div className="card mt-4 overflow-hidden p-6 sm:p-8">
         <MailArt className="mx-auto -mt-2 w-56" />
+
+        {devCode && (
+          <p className="mb-4 rounded-2xl bg-pet-soft p-3 text-center text-sm">
+            Tryb dev – kod logowania: <strong className="font-mono text-lg tracking-widest">{devCode}</strong>
+          </p>
+        )}
 
         {!pending ? (
           <form onSubmit={sendCode} className="animate-rise" noValidate>
