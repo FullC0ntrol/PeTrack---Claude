@@ -39,6 +39,10 @@ docker compose logs -f app
 
 Zatrzymanie: `docker compose down`. Z usunięciem danych: `docker compose down -v`. Porty zmienisz w `.env` (`HTTP_PORT`, `DB_PORT`).
 
+### Serwer VPS (2.petracker.pl)
+
+Krok po kroku, obok działającej wersji klasycznej (nginx + certbot): [docs/DEPLOY.md](docs/DEPLOY.md). Gotowe pliki: [deploy/nginx-2.petracker.pl.conf](deploy/nginx-2.petracker.pl.conf) i [deploy/env.server.example](deploy/env.server.example).
+
 ### Tryb deweloperski
 
 Wymagania: Node.js 22 i Docker (tylko dla bazy).
@@ -136,7 +140,8 @@ Wszystkie zmienne opisuje [.env.example](.env.example). Najważniejsze przed wdr
 │   └── scripts/generate-tags.js
 ├── public/                  ikony PWA, theme-init.js
 ├── scripts/                 dev.mjs (API + Vite), generate-icons.mjs
-├── docs/ROZNICE.md          porównanie z wersją klasyczną
+├── docs/                    ROZNICE.md (porównanie z wersją klasyczną), DEPLOY.md (wdrożenie na VPS)
+├── deploy/                  konfiguracja nginx i wzór .env dla serwera
 └── Dockerfile, docker-compose.yml, .env.example
 ```
 
