@@ -22,7 +22,7 @@ function securityHeaders(req, res, next) {
     'X-Content-Type-Options': 'nosniff',
     'Referrer-Policy': 'same-origin',
     'X-Frame-Options': 'DENY',
-    'Permissions-Policy': 'camera=(self), geolocation=(self), microphone=()',
+    'Permissions-Policy': 'camera=(self), geolocation=(self), nfc=(self), microphone=()',
     'Content-Security-Policy': [
       "default-src 'self'",
       "script-src 'self'",

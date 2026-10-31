@@ -1,7 +1,8 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { useParams } from 'react-router'
 import { petsApi, tagsApi } from '../../api/endpoints.js'
 import { EmptyTagsArt } from '../../components/illustrations/Scenes.jsx'
+import NfcClaimSheet from '../../components/pets/NfcClaimSheet.jsx'
 import SubHeader from '../../components/layout/SubHeader.jsx'
 import Button from '../../components/ui/Button.jsx'
 import { ErrorState } from '../../components/ui/Controls.jsx'
@@ -30,13 +31,7 @@ export default function TagsPage() {
   const [toRemove, setToRemove] = useState(null)
   const [removing, setRemoving] = useState(false)
   const [nfcWriting, setNfcWriting] = useState(null)
-
-  useEffect(() => {
-    if (!('NDEFReader' in window)) return undefined
-    const controller = new AbortController()
-    new window.NDEFReader().scan({ signal: controller.signal }).then(() => controller.abort()).catch(() => {})
-    return () => controller.abort()
-  }, [])
+  const [nfcOpen, setNfcOpen] = useState(false)
 
   const writeNfc = async (code) => {
     if (!('NDEFReader' in window)) {
@@ -130,6 +125,10 @@ export default function TagsPage() {
         </ul>
       )}
 
+      <Button variant="pet" size="xl" full icon="nfc" className="mt-5 animate-rise" style={{ animationDelay: '90ms' }} onClick={() => setNfcOpen(true)}>
+        Przyłóż nowy tag
+      </Button>
+
       <form onSubmit={claim} className="card mt-5 animate-rise" style={{ animationDelay: '120ms' }} noValidate>
         <h2 className="flex items-center gap-2 text-lg font-bold">
           <Icon name="tag" className="text-pet-text" /> Wpisz kod z zawieszki
@@ -162,10 +161,20 @@ export default function TagsPage() {
       <div className="mt-4 flex animate-rise gap-3 rounded-4xl bg-pet-soft p-5 text-sm" style={{ animationDelay: '180ms' }}>
         <Icon name="nfc" className="text-pet-text" />
         <p>
-          <strong>Masz nowy tag pod ręką?</strong> Przyłóż do niego telefon (NFC) albo zeskanuj QR aparatem. Jeśli jesteś zalogowany, od razu zobaczysz
-          ekran „Przypisz ten tag do zwierzęcia”.
+          <strong>Nie masz NFC?</strong> Zeskanuj kod QR z zawieszki zwykłym aparatem – jeśli jesteś zalogowany, od razu zobaczysz ekran „Przypisz ten tag do
+          zwierzęcia”.
         </p>
       </div>
+
+      <NfcClaimSheet
+        open={nfcOpen}
+        onClose={() => setNfcOpen(false)}
+        pet={pet}
+        onClaimed={(tagCode) => {
+          setJustAdded(tagCode)
+          return Promise.all([reload({ silent: true }), reloadPets()])
+        }}
+      />
 
       <Sheet open={Boolean(toRemove)} onClose={() => setToRemove(null)} title={`Odpiąć tag ${toRemove ?? ''}?`}>
         <p className="px-2 text-muted">

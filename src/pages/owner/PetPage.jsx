@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router'
 import { petsApi } from '../../api/endpoints.js'
 import EventItem from '../../components/pets/EventItem.jsx'
+import NfcClaimSheet from '../../components/pets/NfcClaimSheet.jsx'
 import PetAvatar from '../../components/pets/PetAvatar.jsx'
 import PetSwitcher from '../../components/pets/PetSwitcher.jsx'
 import Button from '../../components/ui/Button.jsx'
@@ -31,12 +32,13 @@ import { LAST_PET_KEY, local } from '../../lib/storage.js'
 */
 export default function PetPage() {
   const { petId } = useParams()
-  const { pets } = usePets()
+  const { pets, reload: reloadPets } = usePets()
   const { data, error, loading, reload, setData } = useResource(
     () => Promise.all([petsApi.get(petId), petsApi.events(petId)]).then(([p, e]) => ({ pet: p.pet, events: e })),
     [petId],
   )
   const [sheetOpen, setSheetOpen] = useState(false)
+  const [nfcOpen, setNfcOpen] = useState(false)
 
   useEffect(() => {
     local.set(LAST_PET_KEY, petId)
@@ -66,6 +68,7 @@ export default function PetPage() {
           events={data.events}
           onPetChange={(pet) => setData((d) => ({ ...d, pet: { ...d.pet, ...pet } }))}
           onOpenActions={() => setSheetOpen(true)}
+          onAssignTag={() => setNfcOpen(true)}
         />
       )}
 
@@ -86,13 +89,19 @@ export default function PetPage() {
             </button>
           </div>
           <ActionsSheet open={sheetOpen} onClose={() => setSheetOpen(false)} pet={data.pet} unread={data.events.unread} />
+          <NfcClaimSheet
+            open={nfcOpen}
+            onClose={() => setNfcOpen(false)}
+            pet={data.pet}
+            onClaimed={() => Promise.all([reload({ silent: true }), reloadPets()])}
+          />
         </>
       )}
     </div>
   )
 }
 
-function PetContent({ pet, events, onPetChange, onOpenActions }) {
+function PetContent({ pet, events, onPetChange, onOpenActions, onAssignTag }) {
   const age = ageLabel(ageFromBirthDate(pet.birthDate))
   const subtitle = [speciesLabel(pet.species, pet.sex), pet.breed, age].filter(Boolean).join(' · ')
 
@@ -149,7 +158,7 @@ function PetContent({ pet, events, onPetChange, onOpenActions }) {
             <h2 className="font-bold">{pet.name} nie ma jeszcze tagu</h2>
             <p className="text-sm text-muted">Przyłóż telefon do nowego tagu albo wpisz jego kod.</p>
           </div>
-          <Button to={`/app/p/${pet.id}/tagi`} variant="pet" size="sm">
+          <Button variant="pet" size="sm" icon="nfc" onClick={onAssignTag}>
             Przypisz
           </Button>
         </section>
